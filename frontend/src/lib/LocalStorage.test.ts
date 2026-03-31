@@ -59,4 +59,16 @@ describe('LocalStorage', () => {
       expect(LocalStorage.getTablePageSize()).toBe(size);
     }
   });
+
+  it('stores page size per page independently', () => {
+    LocalStorage.saveTablePageSize(50, 'runs');
+    LocalStorage.saveTablePageSize(20, 'experiments');
+    expect(LocalStorage.getTablePageSize('runs')).toBe(50);
+    expect(LocalStorage.getTablePageSize('experiments')).toBe(20);
+  });
+
+  it('returns default for a page with no saved value', () => {
+    LocalStorage.saveTablePageSize(50, 'runs');
+    expect(LocalStorage.getTablePageSize('pipelines')).toBe(10);
+  });
 });

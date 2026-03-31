@@ -32,13 +32,19 @@ export class LocalStorage {
     localStorage.setItem(LocalStorageKey.navbarCollapsed, value.toString());
   }
 
-  public static getTablePageSize(): number {
-    const value = localStorage.getItem(LocalStorageKey.tablePageSize);
+  public static getTablePageSize(pageId?: string): number {
+    const key = pageId
+      ? `${LocalStorageKey.tablePageSize}_${pageId}`
+      : LocalStorageKey.tablePageSize;
+    const value = localStorage.getItem(key);
     const parsed = Number(value);
     return [10, 20, 50, 100].includes(parsed) ? parsed : 10;
   }
 
-  public static saveTablePageSize(value: number): void {
-    localStorage.setItem(LocalStorageKey.tablePageSize, value.toString());
+  public static saveTablePageSize(value: number, pageId?: string): void {
+    const key = pageId
+      ? `${LocalStorageKey.tablePageSize}_${pageId}`
+      : LocalStorageKey.tablePageSize;
+    localStorage.setItem(key, value.toString());
   }
 }

@@ -236,11 +236,11 @@ export default class CustomTable extends React.Component<CustomTableProps, Custo
         this.props.initialFilterString && this.props.isCalledByV1
           ? this._createAndEncodeFilterV1(this.props.initialFilterString)
           : this.props.initialFilterString
-          ? this._createAndEncodeFilterV2(this.props.initialFilterString)
-          : '',
+            ? this._createAndEncodeFilterV2(this.props.initialFilterString)
+            : '',
       isBusy: false,
       maxPageIndex: Number.MAX_SAFE_INTEGER,
-      pageSize: LocalStorage.getTablePageSize(),
+      pageSize: LocalStorage.getTablePageSize(this._getPageId()),
       sortBy:
         props.initialSortColumn || (props.columns.length ? props.columns[0].sortKey || '' : ''),
       sortOrder: props.initialSortOrder || 'desc',
@@ -334,15 +334,15 @@ export default class CustomTable extends React.Component<CustomTableProps, Custo
         {/* Header */}
         <div className={classes(css.header, this.props.disableSelection && padding(20, 'l'))}>
           {// Called as function to avoid breaking shallow rendering tests.
-          HeaderRowSelectionSection({
-            disableSelection: this.props.disableSelection,
-            indeterminate: !!numSelected && numSelected < this.props.rows.length,
-            isSelected: !!numSelected && numSelected === this.props.rows.length,
-            onSelectAll: this.handleSelectAllClick.bind(this),
-            showExpandButton: !!this.props.getExpandComponent,
-            useRadioButtons: this.props.useRadioButtons,
-            disableAdditionalSelection: this.props.disableAdditionalSelection,
-          })}
+            HeaderRowSelectionSection({
+              disableSelection: this.props.disableSelection,
+              indeterminate: !!numSelected && numSelected < this.props.rows.length,
+              isSelected: !!numSelected && numSelected === this.props.rows.length,
+              onSelectAll: this.handleSelectAllClick.bind(this),
+              showExpandButton: !!this.props.getExpandComponent,
+              useRadioButtons: this.props.useRadioButtons,
+              disableAdditionalSelection: this.props.disableAdditionalSelection,
+            })}
           {this.props.columns.map((col, i) => {
             const isColumnSortable = !!this.props.columns[i].sortKey;
             const isCurrentSortColumn = sortBy === this.props.columns[i].sortKey;
@@ -426,15 +426,15 @@ export default class CustomTable extends React.Component<CustomTableProps, Custo
                   onClick={(e) => this.handleClick(e, row.id)}
                 >
                   {// Called as function to avoid breaking shallow rendering tests.
-                  BodyRowSelectionSection({
-                    disableSelection: this.props.disableSelection,
-                    expandState: row.expandState,
-                    isSelected: selected,
-                    onExpand: (e) => this._expandButtonToggled(e, i),
-                    showExpandButton: !!this.props.getExpandComponent,
-                    useRadioButtons: this.props.useRadioButtons,
-                    disableAdditionalSelection: this.props.disableAdditionalSelection,
-                  })}
+                    BodyRowSelectionSection({
+                      disableSelection: this.props.disableSelection,
+                      expandState: row.expandState,
+                      isSelected: selected,
+                      onExpand: (e) => this._expandButtonToggled(e, i),
+                      showExpandButton: !!this.props.getExpandComponent,
+                      useRadioButtons: this.props.useRadioButtons,
+                      disableAdditionalSelection: this.props.disableAdditionalSelection,
+                    })}
                   <CustomTableRow row={row} columns={this.props.columns} />
                 </div>
                 {row.expandState === ExpandState.EXPANDED && this.props.getExpandComponent && (
@@ -536,8 +536,8 @@ export default class CustomTable extends React.Component<CustomTableProps, Custo
       filterString && this.props.isCalledByV1
         ? this._createAndEncodeFilterV1(filterString)
         : filterString
-        ? this._createAndEncodeFilterV2(filterString)
-        : '';
+          ? this._createAndEncodeFilterV2(filterString)
+          : '';
     this.setStateSafe({ filterStringEncoded });
     this._resetToFirstPage(await this.reload({ filter: filterStringEncoded }));
   }
@@ -616,8 +616,14 @@ export default class CustomTable extends React.Component<CustomTableProps, Custo
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ): Promise<void> {
     const pageSize = Number(event.target.value);
-    LocalStorage.saveTablePageSize(pageSize);
+    LocalStorage.saveTablePageSize(pageSize, this._getPageId());
     this._resetToFirstPage(await this.reload({ pageSize, pageToken: '' }));
+  }
+
+  private _getPageId(): string | undefined {
+    const hash = window.location.hash;
+    const match = hash.match(/^#\/([a-zA-Z]+)/);
+    return match ? match[1] : undefined;
   }
 
   private _resetToFirstPage(newPageToken?: string): void {
