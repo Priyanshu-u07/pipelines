@@ -38,4 +38,25 @@ describe('LocalStorage', () => {
     LocalStorage.saveNavbarCollapsed(true);
     expect(LocalStorage.isNavbarCollapsed()).toBe(true);
   });
+
+  it('returns default page size of 10 when no value is saved', () => {
+    expect(LocalStorage.getTablePageSize()).toBe(10);
+  });
+
+  it('reads and writes table page size', () => {
+    LocalStorage.saveTablePageSize(50);
+    expect(LocalStorage.getTablePageSize()).toBe(50);
+  });
+
+  it('returns default page size for invalid stored values', () => {
+    localStorage.setItem(LocalStorageKey.tablePageSize, '25');
+    expect(LocalStorage.getTablePageSize()).toBe(10);
+  });
+
+  it('accepts all valid page size options', () => {
+    for (const size of [10, 20, 50, 100]) {
+      LocalStorage.saveTablePageSize(size);
+      expect(LocalStorage.getTablePageSize()).toBe(size);
+    }
+  });
 });

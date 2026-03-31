@@ -16,6 +16,7 @@
 
 export enum LocalStorageKey {
   navbarCollapsed = 'navbarCollapsed',
+  tablePageSize = 'tablePageSize',
 }
 
 export class LocalStorage {
@@ -29,5 +30,15 @@ export class LocalStorage {
 
   public static saveNavbarCollapsed(value: boolean): void {
     localStorage.setItem(LocalStorageKey.navbarCollapsed, value.toString());
+  }
+
+  public static getTablePageSize(): number {
+    const value = localStorage.getItem(LocalStorageKey.tablePageSize);
+    const parsed = Number(value);
+    return [10, 20, 50, 100].includes(parsed) ? parsed : 10;
+  }
+
+  public static saveTablePageSize(value: number): void {
+    localStorage.setItem(LocalStorageKey.tablePageSize, value.toString());
   }
 }
