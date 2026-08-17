@@ -866,6 +866,8 @@ func (w *Workflow) NodeStatuses() map[string]NodeStatus {
 			ID:          RetrievePodName(*w.Workflow, node),
 			DisplayName: node.DisplayName,
 			State:       string(node.Phase),
+			Type:        string(node.Type),
+			Message:     node.Message,
 			StartTime:   node.StartedAt.Unix(),
 			CreateTime:  node.StartedAt.Unix(),
 			FinishTime:  node.FinishedAt.Unix(),
