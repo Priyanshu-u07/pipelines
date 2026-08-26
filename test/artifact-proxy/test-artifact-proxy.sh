@@ -99,3 +99,6 @@ fi
 # Cleanup
 kubectl -n "$NAMESPACE" delete workflow "$WORKFLOW_NAME" --ignore-not-found=true
 kubectl -n "$NAMESPACE" delete pod kfp-proxy-curl --ignore-not-found=true
+
+
+sbdjdsjbfbj
