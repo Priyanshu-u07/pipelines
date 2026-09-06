@@ -32,6 +32,7 @@ import (
 	"github.com/cenkalti/backoff"
 	mysqlStd "github.com/go-sql-driver/mysql"
 	"github.com/golang/glog"
+	"github.com/google/uuid"
 	"github.com/kubeflow/pipelines/backend/src/apiserver/archive"
 	"github.com/kubeflow/pipelines/backend/src/apiserver/auth"
 	"github.com/kubeflow/pipelines/backend/src/apiserver/client"
@@ -1481,17 +1482,24 @@ func migrationApplied(db *gorm.DB, name string) (bool, error) {
 }
 
 // claimMigration records the migration and reports whether this caller won the
-// claim. A conflict means another replica is running or has run it, so the
-// caller skips rather than duplicating the scan.
+// claim. The winner is identified by reading its own token back, not by the
+// affected-row count: the gorm driver compiles DoNothing to an ON DUPLICATE KEY
+// UPDATE, and MySQL runs with ClientFoundRows, so a duplicate insert reports one
+// matched row to every caller.
 func claimMigration(tx *gorm.DB, name string) (bool, error) {
-	res := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&model.MigrationStatus{
+	token := uuid.NewString()
+	if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&model.MigrationStatus{
 		Name:           name,
 		AppliedAtInSec: time.Now().Unix(),
-	})
-	if res.Error != nil {
-		return false, fmt.Errorf("claim migration %q: %w", name, res.Error)
+		ClaimToken:     token,
+	}).Error; err != nil {
+		return false, fmt.Errorf("claim migration %q: %w", name, err)
 	}
-	return res.RowsAffected > 0, nil
+	var stored model.MigrationStatus
+	if err := tx.Where(map[string]any{"Name": name}).First(&stored).Error; err != nil {
+		return false, fmt.Errorf("read migration claim %q: %w", name, err)
+	}
+	return stored.ClaimToken == token, nil
 }
 
 // backfillRunRefColumnSQL updates only run_details while its subqueries read

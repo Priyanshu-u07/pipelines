@@ -14,14 +14,15 @@
 
 package model
 
-// MigrationStatus records one-time data migrations that have already been
-// applied, so that every apiserver replica does not re-run them on each
-// startup. Schema migrations are handled by AutoMigrate; this table exists for
-// data backfills, whose cost scales with retained history rather than with the
-// schema.
+// MigrationStatus records one-time data backfills that have already run.
+// AutoMigrate covers schema changes; this table exists for data migrations,
+// whose cost scales with retained history rather than with the schema.
 type MigrationStatus struct {
 	Name           string `gorm:"column:Name; not null; primaryKey; type:varchar(64);"`
 	AppliedAtInSec int64  `gorm:"column:AppliedAtInSec; not null;"`
+	// Identifies the replica whose insert created the row. See claimMigration
+	// for why an affected-row count cannot serve this.
+	ClaimToken string `gorm:"column:ClaimToken; not null; type:varchar(64);"`
 }
 
 func (MigrationStatus) TableName() string {

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -28,6 +29,7 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
@@ -710,9 +712,28 @@ func TestClaimMigration_OnlyOneCallerWins(t *testing.T) {
 	assert.Equal(t, int64(1), count)
 }
 
-// A run that stored its version id directly, with no resource reference at all,
-// must still resolve its parent pipeline: v2 creation takes both ids from the
-// same pipeline_version_reference, so pipeline_id can be left empty.
+func TestClaimMigration_MySQLClientFoundRows(t *testing.T) {
+	dsn := os.Getenv("KFP_TEST_MYSQL_DSN")
+	if dsn == "" {
+		t.Skip("KFP_TEST_MYSQL_DSN not set")
+	}
+	require.Contains(t, dsn, "clientFoundRows=true",
+		"the DSN must mirror initDBDriver, otherwise this test cannot reproduce the case it guards")
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	require.NoError(t, err)
+	require.NoError(t, db.Migrator().DropTable(&model.MigrationStatus{}))
+	require.NoError(t, db.AutoMigrate(&model.MigrationStatus{}))
+
+	won, err := claimMigration(db, "m1")
+	require.NoError(t, err)
+	assert.True(t, won)
+
+	won, err = claimMigration(db, "m1")
+	require.NoError(t, err)
+	assert.False(t, won, "with ClientFoundRows a duplicate reports one matched row; the loser must still skip")
+}
+
 func TestBackfillPipelineRefs_VersionIdColumnWithoutReference(t *testing.T) {
 	db := getTestSQLite(t)
 	require.NoError(t, autoMigrate(db))
@@ -732,5 +753,6 @@ func TestBackfillPipelineRefs_VersionIdColumnWithoutReference(t *testing.T) {
 
 	require.NoError(t, backfillPipelineRefsToRunTable(db, GetDialect("sqlite")))
 
-	assert.Equal(t, "pipe-parent", storedRunColumn(t, db, "PipelineId", "run-col"))
+	assert.Equal(t, "pipe-parent", storedRunColumn(t, db, "PipelineId", "run-col"),
+		"a run that stores only a version id must still resolve its parent pipeline")
 }
